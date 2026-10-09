@@ -1,5 +1,4 @@
 
-
 module riscv_cpu_tb;
     reg clk, reset;
 
@@ -10,58 +9,51 @@ module riscv_cpu_tb;
         clk = 0;
         reset = 1;
 
-        // x1=5, x2=5, x3=3
+        // x1 = 5
         dut.imem[0] = 32'h00500093; // addi x1,x0,5
-        dut.imem[1] = 32'h00500113; // addi x2,x0,5
-        dut.imem[2] = 32'h00300193; // addi x3,x0,3
 
-        // BEQ: x1 == x2, skip x4=99
-        dut.imem[3] = 32'h00208463; // beq x1,x2,+8
-        dut.imem[4] = 32'h06300213; // addi x4,x0,99
-        dut.imem[5] = 32'h00700213; // addi x4,x0,7
+        // JAL: jump from PC=4 to PC=12
+        // Save PC+4 (=8) in x5
+        dut.imem[1] = 32'h008002EF; // jal x5,+8
 
-        // BNE: x1 != x3, skip x5=99
-        dut.imem[6] = 32'h00309463; // bne x1,x3,+8
-        dut.imem[7] = 32'h06300293; // addi x5,x0,99
-        dut.imem[8] = 32'h00900293; // addi x5,x0,9
+        // This instruction should be skipped
+        dut.imem[2] = 32'h06300113; // addi x2,x0,99
 
-        // BLT: x3 < x1, skip x6=99
-        dut.imem[9]  = 32'h0011C463; // blt x3,x1,+8
-        dut.imem[10] = 32'h06300313; // addi x6,x0,99
-        dut.imem[11] = 32'h00B00313; // addi x6,x0,11
+        // Target at PC=12
+        dut.imem[3] = 32'h00B00113; // addi x2,x0,11
 
-        // BGE: x1 >= x3, skip x7=99
-        dut.imem[12] = 32'h0030D463; // bge x1,x3,+8
-        dut.imem[13] = 32'h06300393; // addi x7,x0,99
-        dut.imem[14] = 32'h00D00393; // addi x7,x0,13
+        // Prepare JALR target: x1=32
+        dut.imem[4] = 32'h02000093; // addi x1,x0,32
 
-        // BLTU: unsigned x3 < x2, skip x8=99
-        dut.imem[15] = 32'h0021E463; // bltu x3,x2,+8
-        dut.imem[16] = 32'h06300413; // addi x8,x0,99
-        dut.imem[17] = 32'h00F00413; // addi x8,x0,15
+        // JALR: jump to (x1+0)&~1 = 32
+        // Save PC+4 (=20) in x6
+        dut.imem[5] = 32'h00008367; // jalr x6,0(x1)
 
-        // BGEU: unsigned x2 >= x3, skip x9=99
-        dut.imem[18] = 32'h00317463; // bgeu x2,x3,+8
-        dut.imem[19] = 32'h06300493; // addi x9,x0,99
-        dut.imem[20] = 32'h01100493; // addi x9,x0,17
+        // These instructions should be skipped
+        dut.imem[6] = 32'h06300193; // addi x3,x0,99
+        dut.imem[7] = 32'h06300213; // addi x4,x0,99
+
+        // JALR target at PC=32 (instruction index 8)
+        dut.imem[8] = 32'h00D00193; // addi x3,x0,13
 
         #12;
         reset = 0;
-        #220;
+        #120;
 
-        $display("x4 = %0d", dut.x[4]);
-        $display("x5 = %0d", dut.x[5]);
-        $display("x6 = %0d", dut.x[6]);
-        $display("x7 = %0d", dut.x[7]);
-        $display("x8 = %0d", dut.x[8]);
-        $display("x9 = %0d", dut.x[9]);
+        $display("x2 (JAL target) = %0d", dut.x[2]);
+        $display("x3 (JALR target) = %0d", dut.x[3]);
+        $display("x4 (should stay 0) = %0d", dut.x[4]);
+        $display("x5 (JAL link) = %0d", dut.x[5]);
+        $display("x6 (JALR link) = %0d", dut.x[6]);
 
-        if (dut.x[4] == 7 && dut.x[5] == 9 &&
-            dut.x[6] == 11 && dut.x[7] == 13 &&
-            dut.x[8] == 15 && dut.x[9] == 17)
-            $display("PASS: Branch tests");
+        if (dut.x[2] == 11 &&
+            dut.x[3] == 13 &&
+            dut.x[4] == 0 &&
+            dut.x[5] == 8 &&
+            dut.x[6] == 24)
+            $display("PASS: JAL and JALR tests");
         else
-            $display("FAIL: Branch tests");
+            $display("FAIL: JAL and JALR tests");
 
         $finish;
     end
