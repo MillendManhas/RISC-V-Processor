@@ -1,4 +1,5 @@
 
+
 module riscv_cpu_tb;
     reg clk, reset;
 
@@ -9,52 +10,55 @@ module riscv_cpu_tb;
         clk = 0;
         reset = 1;
 
-        // x1 = 5
-        dut.imem[0] = 32'h00500093; // addi x1,x0,5
+        // Negative immediate: -1
+        dut.imem[0] = 32'hFFF00093; // addi x1,x0,-1
 
-        // JAL: jump from PC=4 to PC=12
-        // Save PC+4 (=8) in x5
-        dut.imem[1] = 32'h008002EF; // jal x5,+8
+        // Negative immediate: -5
+        dut.imem[1] = 32'hFFB00113; // addi x2,x0,-5
 
-        // This instruction should be skipped
-        dut.imem[2] = 32'h06300113; // addi x2,x0,99
+        // Signed comparison: -5 < -1
+        dut.imem[2] = 32'h0020A1B3; // slt x3,x1,x2 (x1 < x2? false)
+        dut.imem[3] = 32'h0020A233; // slt x4,x1,x2 (same comparison)
 
-        // Target at PC=12
-        dut.imem[3] = 32'h00B00113; // addi x2,x0,11
+        // Base address 64; value 127
+        dut.imem[4] = 32'h04000293; // addi x5,x0,64
+        dut.imem[5] = 32'h0FF00313; // addi x6,x0,255
+        dut.imem[6] = 32'h00628023; // sb x6,0(x5)
 
-        // Prepare JALR target: x1=32
-        dut.imem[4] = 32'h02000093; // addi x1,x0,32
+        // Signed and unsigned byte loads
+        dut.imem[7] = 32'h00028383; // lb x7,0(x5)
+        dut.imem[8] = 32'h0002C403; // lbu x8,0(x5)
 
-        // JALR: jump to (x1+0)&~1 = 32
-        // Save PC+4 (=20) in x6
-        dut.imem[5] = 32'h00008367; // jalr x6,0(x1)
-
-        // These instructions should be skipped
-        dut.imem[6] = 32'h06300193; // addi x3,x0,99
-        dut.imem[7] = 32'h06300213; // addi x4,x0,99
-
-        // JALR target at PC=32 (instruction index 8)
-        dut.imem[8] = 32'h00D00193; // addi x3,x0,13
+        // Store 255 in the low halfword at address 66
+dut.imem[9]  = 32'h0FF00313; // addi x6,x0,255
+dut.imem[10] = 32'h00629123; // sh x6,2(x5)
+dut.imem[11] = 32'h00229503; // lh x10,2(x5)
+dut.imem[12] = 32'h0022D583; // lhu x11,2(x5)
 
         #12;
         reset = 0;
-        #120;
+        #160;
 
-        $display("x2 (JAL target) = %0d", dut.x[2]);
-        $display("x3 (JALR target) = %0d", dut.x[3]);
-        $display("x4 (should stay 0) = %0d", dut.x[4]);
-        $display("x5 (JAL link) = %0d", dut.x[5]);
-        $display("x6 (JALR link) = %0d", dut.x[6]);
+        $display("x1 = %0d", $signed(dut.x[1]));
+        $display("x2 = %0d", $signed(dut.x[2]));
+        $display("x7 (LB) = %0d", $signed(dut.x[7]));
+        $display("x8 (LBU) = %0d", dut.x[8]);
 
-        if (dut.x[2] == 11 &&
-            dut.x[3] == 13 &&
-            dut.x[4] == 0 &&
-            dut.x[5] == 8 &&
-            dut.x[6] == 24)
-            $display("PASS: JAL and JALR tests");
-        else
-            $display("FAIL: JAL and JALR tests");
+        if (dut.x[1] == 32'hFFFFFFFF &&
+    dut.x[2] == 32'hFFFFFFFB &&
+    dut.x[7] == 32'hFFFFFFFF &&
+    dut.x[8] == 255)
+    $display("PASS: Signed and unsigned byte load test");
+else
+    $display("FAIL: Signed and unsigned byte load test");
 
+    $display("x10 (LH) = %0d", $signed(dut.x[10]));
+$display("x11 (LHU) = %0d", dut.x[11]);
+
+if (dut.x[10] == 255 && dut.x[11] == 255)
+    $display("PASS: Halfword load test");
+else
+    $display("FAIL: Halfword load test");
         $finish;
     end
 endmodule
