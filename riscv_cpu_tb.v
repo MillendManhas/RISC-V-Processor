@@ -1,70 +1,68 @@
 
+
 module riscv_cpu_tb;
+    reg clk, reset;
 
-    reg clk;
-    reg reset;
-
-    riscv_cpu dut (
-        .clk(clk),
-        .reset(reset)
-    );
-
+    riscv_cpu dut (.clk(clk), .reset(reset));
     always #5 clk = ~clk;
 
     initial begin
         clk = 0;
         reset = 1;
 
-        // x1 = 64: base address
-        dut.imem[0] = 32'h04000093; // addi x1, x0, 64
+        // x1=5, x2=5, x3=3
+        dut.imem[0] = 32'h00500093; // addi x1,x0,5
+        dut.imem[1] = 32'h00500113; // addi x2,x0,5
+        dut.imem[2] = 32'h00300193; // addi x3,x0,3
 
-        // x2 = 291 = 0x123
-        dut.imem[1] = 32'h12300113; // addi x2, x0, 291
+        // BEQ: x1 == x2, skip x4=99
+        dut.imem[3] = 32'h00208463; // beq x1,x2,+8
+        dut.imem[4] = 32'h06300213; // addi x4,x0,99
+        dut.imem[5] = 32'h00700213; // addi x4,x0,7
 
-        // Store a word at address 64
-        dut.imem[2] = 32'h0020A023; // sw x2, 0(x1)
+        // BNE: x1 != x3, skip x5=99
+        dut.imem[6] = 32'h00309463; // bne x1,x3,+8
+        dut.imem[7] = 32'h06300293; // addi x5,x0,99
+        dut.imem[8] = 32'h00900293; // addi x5,x0,9
 
-        // Load byte, halfword and word
-        dut.imem[3] = 32'h00008183; // lb  x3, 0(x1)
-        dut.imem[4] = 32'h0000C203; // lbu x4, 0(x1)
-        dut.imem[5] = 32'h00009283; // lh  x5, 0(x1)
-        dut.imem[6] = 32'h0000D303; // lhu x6, 0(x1)
-        dut.imem[7] = 32'h0000A383; // lw  x7, 0(x1)
+        // BLT: x3 < x1, skip x6=99
+        dut.imem[9]  = 32'h0011C463; // blt x3,x1,+8
+        dut.imem[10] = 32'h06300313; // addi x6,x0,99
+        dut.imem[11] = 32'h00B00313; // addi x6,x0,11
 
-        // Store a byte at address 68
-        dut.imem[8] = 32'h00208223; // sb x2, 4(x1)
-        dut.imem[9] = 32'h0040C403; // lbu x8, 4(x1)
+        // BGE: x1 >= x3, skip x7=99
+        dut.imem[12] = 32'h0030D463; // bge x1,x3,+8
+        dut.imem[13] = 32'h06300393; // addi x7,x0,99
+        dut.imem[14] = 32'h00D00393; // addi x7,x0,13
 
-        // Store a halfword at address 70
-        dut.imem[10] = 32'h00209323; // sh x2, 6(x1)
-        dut.imem[11] = 32'h0060D483; // lhu x9, 6(x1)
+        // BLTU: unsigned x3 < x2, skip x8=99
+        dut.imem[15] = 32'h0021E463; // bltu x3,x2,+8
+        dut.imem[16] = 32'h06300413; // addi x8,x0,99
+        dut.imem[17] = 32'h00F00413; // addi x8,x0,15
+
+        // BGEU: unsigned x2 >= x3, skip x9=99
+        dut.imem[18] = 32'h00317463; // bgeu x2,x3,+8
+        dut.imem[19] = 32'h06300493; // addi x9,x0,99
+        dut.imem[20] = 32'h01100493; // addi x9,x0,17
 
         #12;
         reset = 0;
+        #220;
 
-        // Wait for the instructions to execute
-        #120;
+        $display("x4 = %0d", dut.x[4]);
+        $display("x5 = %0d", dut.x[5]);
+        $display("x6 = %0d", dut.x[6]);
+        $display("x7 = %0d", dut.x[7]);
+        $display("x8 = %0d", dut.x[8]);
+        $display("x9 = %0d", dut.x[9]);
 
-        $display("LB  x3 = %0d", dut.x[3]);
-        $display("LBU x4 = %0d", dut.x[4]);
-        $display("LH  x5 = %0d", dut.x[5]);
-        $display("LHU x6 = %0d", dut.x[6]);
-        $display("LW  x7 = %0d", dut.x[7]);
-        $display("LBU x8 = %0d", dut.x[8]);
-        $display("LHU x9 = %0d", dut.x[9]);
-
-        if (dut.x[3] == 35 &&
-            dut.x[4] == 35 &&
-            dut.x[5] == 291 &&
-            dut.x[6] == 291 &&
-            dut.x[7] == 291 &&
-            dut.x[8] == 35 &&
-            dut.x[9] == 291)
-            $display("PASS: Load and store tests");
+        if (dut.x[4] == 7 && dut.x[5] == 9 &&
+            dut.x[6] == 11 && dut.x[7] == 13 &&
+            dut.x[8] == 15 && dut.x[9] == 17)
+            $display("PASS: Branch tests");
         else
-            $display("FAIL: Load and store tests");
+            $display("FAIL: Branch tests");
 
         $finish;
     end
-
 endmodule
