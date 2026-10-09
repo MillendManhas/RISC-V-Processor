@@ -1,0 +1,8 @@
+
+# Generated Icarus Verilog simulation executables
+*_sim
+combined_test
+hello
+
+# Waveform files
+*.vcd
