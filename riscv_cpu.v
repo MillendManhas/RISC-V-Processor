@@ -98,11 +98,23 @@ module riscv_cpu (
                     3'b100: result = a ^ imm;
                     3'b110: result = a | imm;
                     3'b111: result = a & imm;
-                    3'b001: result = a << instr[24:20];
-                    3'b101:
-                        result = (funct7 == 7'b0100000)
-                               ? $signed(a) >>> instr[24:20]
-                               : a >> instr[24:20];
+                   
+3'b001: begin
+    if (instr[31:25] == 7'b0000000)
+        result = a << instr[24:20]; // SLLI
+    else
+        result = 0;
+end
+
+3'b101: begin
+    if (instr[31:25] == 7'b0000000)
+        result = a >> instr[24:20]; // SRLI
+    else if (instr[31:25] == 7'b0100000)
+        result = $signed(a) >>> instr[24:20]; // SRAI
+    else
+        result = 0;
+end
+
                 endcase
             end
 
