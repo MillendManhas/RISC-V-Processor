@@ -38,24 +38,56 @@ module riscv_cpu (
 
         case (opcode)
 
+        
             // R-type instructions
             7'b0110011: begin
                 case (funct3)
-                    3'b000:
-                        result = (funct7 == 7'b0100000)
-                               ? a - b : a + b;
-                    3'b001: result = a << b[4:0];
-                    3'b010: result = ($signed(a) < $signed(b));
-                    3'b011: result = (a < b);
-                    3'b100: result = a ^ b;
-                    3'b101:
-                        result = (funct7 == 7'b0100000)
-                               ? $signed(a) >>> b[4:0]
-                               : a >> b[4:0];
-                    3'b110: result = a | b;
-                    3'b111: result = a & b;
+                    3'b000: begin
+                        if (funct7 == 7'b0000000)
+                            result = a + b; // ADD
+                        else if (funct7 == 7'b0100000)
+                            result = a - b; // SUB
+                        else
+                            result = 0;
+                    end
+
+                    3'b001:
+                        result = (funct7 == 7'b0000000)
+                               ? a << b[4:0] : 0; // SLL
+
+                    3'b010:
+                        result = (funct7 == 7'b0000000)
+                               ? ($signed(a) < $signed(b)) : 0; // SLT
+
+                    3'b011:
+                        result = (funct7 == 7'b0000000)
+                               ? (a < b) : 0; // SLTU
+
+                    3'b100:
+                        result = (funct7 == 7'b0000000)
+                               ? (a ^ b) : 0; // XOR
+
+                    3'b101: begin
+                        if (funct7 == 7'b0000000)
+                            result = a >> b[4:0]; // SRL
+                        else if (funct7 == 7'b0100000)
+                            result = $signed(a) >>> b[4:0]; // SRA
+                        else
+                            result = 0;
+                    end
+
+                    3'b110:
+                        result = (funct7 == 7'b0000000)
+                               ? (a | b) : 0; // OR
+
+                    3'b111:
+                        result = (funct7 == 7'b0000000)
+                               ? (a & b) : 0; // AND
+
+                    default: result = 0;
                 endcase
             end
+
 
             // I-type arithmetic instructions
             7'b0010011: begin

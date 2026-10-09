@@ -10,55 +10,44 @@ module riscv_cpu_tb;
         clk = 0;
         reset = 1;
 
-        // Negative immediate: -1
-        dut.imem[0] = 32'hFFF00093; // addi x1,x0,-1
+        dut.imem[0] = 32'h00C00093; // addi x1,x0,12
+        dut.imem[1] = 32'h00300113; // addi x2,x0,3
 
-        // Negative immediate: -5
-        dut.imem[1] = 32'hFFB00113; // addi x2,x0,-5
-
-        // Signed comparison: -5 < -1
-        dut.imem[2] = 32'h0020A1B3; // slt x3,x1,x2 (x1 < x2? false)
-        dut.imem[3] = 32'h0020A233; // slt x4,x1,x2 (same comparison)
-
-        // Base address 64; value 127
-        dut.imem[4] = 32'h04000293; // addi x5,x0,64
-        dut.imem[5] = 32'h0FF00313; // addi x6,x0,255
-        dut.imem[6] = 32'h00628023; // sb x6,0(x5)
-
-        // Signed and unsigned byte loads
-        dut.imem[7] = 32'h00028383; // lb x7,0(x5)
-        dut.imem[8] = 32'h0002C403; // lbu x8,0(x5)
-
-        // Store 255 in the low halfword at address 66
-dut.imem[9]  = 32'h0FF00313; // addi x6,x0,255
-dut.imem[10] = 32'h00629123; // sh x6,2(x5)
-dut.imem[11] = 32'h00229503; // lh x10,2(x5)
-dut.imem[12] = 32'h0022D583; // lhu x11,2(x5)
+        dut.imem[2] = 32'h002081B3; // add  x3,x1,x2 = 15
+        dut.imem[3] = 32'h40208233; // sub  x4,x1,x2 = 9
+        dut.imem[4] = 32'h002092B3; // sll  x5,x1,x2 = 96
+        dut.imem[5] = 32'h0020A333; // slt  x6,x1,x2 = 0
+        dut.imem[6] = 32'h0020B3B3; // sltu x7,x1,x2 = 0
+        dut.imem[7] = 32'h0020C433; // xor  x8,x1,x2 = 15
+        dut.imem[8] = 32'h0020D4B3; // srl  x9,x1,x2 = 1
+        dut.imem[9] = 32'h4020D533; // sra  x10,x1,x2 = 1
+        dut.imem[10] = 32'h0020E5B3; // or   x11,x1,x2 = 15
+        dut.imem[11] = 32'h0020F633; // and  x12,x1,x2 = 0
 
         #12;
         reset = 0;
-        #160;
+        #120;
 
-        $display("x1 = %0d", $signed(dut.x[1]));
-        $display("x2 = %0d", $signed(dut.x[2]));
-        $display("x7 (LB) = %0d", $signed(dut.x[7]));
-        $display("x8 (LBU) = %0d", dut.x[8]);
+        $display("ADD  x3  = %0d", dut.x[3]);
+        $display("SUB  x4  = %0d", dut.x[4]);
+        $display("SLL  x5  = %0d", dut.x[5]);
+        $display("SLT  x6  = %0d", dut.x[6]);
+        $display("SLTU x7  = %0d", dut.x[7]);
+        $display("XOR  x8  = %0d", dut.x[8]);
+        $display("SRL  x9  = %0d", dut.x[9]);
+        $display("SRA  x10 = %0d", dut.x[10]);
+        $display("OR   x11 = %0d", dut.x[11]);
+        $display("AND  x12 = %0d", dut.x[12]);
 
-        if (dut.x[1] == 32'hFFFFFFFF &&
-    dut.x[2] == 32'hFFFFFFFB &&
-    dut.x[7] == 32'hFFFFFFFF &&
-    dut.x[8] == 255)
-    $display("PASS: Signed and unsigned byte load test");
-else
-    $display("FAIL: Signed and unsigned byte load test");
+        if (dut.x[3] == 15 && dut.x[4] == 9 &&
+            dut.x[5] == 96 && dut.x[6] == 0 &&
+            dut.x[7] == 0 && dut.x[8] == 15 &&
+            dut.x[9] == 1 && dut.x[10] == 1 &&
+            dut.x[11] == 15 && dut.x[12] == 0)
+            $display("PASS: R-type instruction tests");
+        else
+            $display("FAIL: R-type instruction tests");
 
-    $display("x10 (LH) = %0d", $signed(dut.x[10]));
-$display("x11 (LHU) = %0d", dut.x[11]);
-
-if (dut.x[10] == 255 && dut.x[11] == 255)
-    $display("PASS: Halfword load test");
-else
-    $display("FAIL: Halfword load test");
         $finish;
     end
 endmodule
