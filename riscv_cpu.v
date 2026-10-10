@@ -132,11 +132,15 @@ end
                        instr[30:21], 1'b0};
             end
 
-            // JALR
+            
+            // JALR: funct3 must be 000
             7'b1100111: begin
-                result = pc + 4;
-                imm = {{20{instr[31]}}, instr[31:20]};
+                if (funct3 == 3'b000) begin
+                    result = pc + 4;
+                    imm = {{20{instr[31]}}, instr[31:20]};
+                end
             end
+
 
             // Conditional branches
             7'b1100011: begin
@@ -256,12 +260,16 @@ end
                     pc <= pc + imm;
                 end
 
+                
                 // JALR
                 7'b1100111: begin
-                    if (rd != 0)
-                        x[rd] <= pc + 4;
-                    pc <= (a + imm) & 32'hfffffffe;
+                    if (funct3 == 3'b000) begin
+                        if (rd != 0)
+                            x[rd] <= pc + 4;
+                        pc <= (a + imm) & 32'hfffffffe;
+                    end
                 end
+
 
             endcase
         end

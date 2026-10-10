@@ -35,9 +35,15 @@ module memory_edge_tb;
         // Load the complete word
         dut.imem[8] = 32'h0000A383; // LW x7, 0(x1)
 
+                // Test sign extension with halfword 0x8000
+        dut.imem[9]  = 32'h00008437; // LUI x8, 0x8
+        dut.imem[10] = 32'h0080A223; // SW x8, 4(x1)
+        dut.imem[11] = 32'h00409483; // LH x9, 4(x1)
+        dut.imem[12] = 32'h0040D503; // LHU x10, 4(x1)
+
         #12;
         reset = 0;
-        #110;
+        #150;
 
         $display("LB  offset 0 = %h", dut.x[3]);
         $display("LBU offset 3 = %h", dut.x[4]);
@@ -90,7 +96,20 @@ module memory_edge_tb;
             $display("FAIL: Little-endian byte ordering");
             errors = errors + 1;
         end
+             if (dut.x[9] === 32'hFFFF8000)
+            $display("PASS: LH sign extension");
+        else begin
+            $display("FAIL: LH sign extension");
+            errors = errors + 1;
+        end
 
+        if (dut.x[10] === 32'h00008000)
+            $display("PASS: LHU zero extension");
+        else begin
+            $display("FAIL: LHU zero extension");
+            errors = errors + 1;
+        end
+        
         if (errors == 0)
             $display("ALL MEMORY EDGE TESTS PASSED");
         else
