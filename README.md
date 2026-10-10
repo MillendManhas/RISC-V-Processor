@@ -79,6 +79,40 @@ vvp combined_test
 
 The testbench reports PASS or FAIL for each instruction group and prints a final summary.
 
+## Run Individual Testbenches
+
+Run the following commands from the project root in PowerShell.
+
+Example — R-type instructions:
+
+```powershell
+iverilog -g2012 -s riscv_cpu_tb -o test_sim riscv_cpu.v tests\r_type_tb.v
+vvp test_sim
+```
+
+Example — all load instructions:
+
+```powershell
+iverilog -g2012 -s load_all_tb -o test_sim riscv_cpu.v tests\load_all_tb.v
+vvp test_sim
+```
+
+Other testbenches are located in the `tests/` directory. Check the module declaration in each file and use that name with the `-s` option.
+
+## Additional Verification
+
+Beyond the combined testbench, individual simulations have been run for:
+
+- All R-type and I-type arithmetic operations
+- Load and store operations
+- Branch instructions and selected branch edge cases
+- JAL and JALR
+- Signed and unsigned comparisons
+- Arithmetic and shift operations
+- Memory offsets and little-endian byte ordering
+- Standalone ALU, immediate generator, multiplexer, program counter, and register file
+
+These tests cover representative instruction behaviors. They do not constitute exhaustive verification of every instruction encoding or boundary condition.
 ## Current Verification
 
 The combined testbench currently passes seven test groups:
