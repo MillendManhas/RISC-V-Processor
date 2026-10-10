@@ -13,7 +13,9 @@ module register_file_tb;
     wire [31:0] read_data1;
     wire [31:0] read_data2;
 
-    // Connect the Register File
+    integer passed = 0;
+    integer failed = 0;
+
     register_file uut (
         .clk(clk),
         .reg_write(reg_write),
@@ -25,62 +27,91 @@ module register_file_tb;
         .read_data2(read_data2)
     );
 
-    // Generate clock
     initial clk = 0;
     always #5 clk = ~clk;
 
-    initial begin
-        $monitor("time=%0t rs1=%0d data1=%0d rs2=%0d data2=%0d",
-                 $time, rs1, read_data1, rs2, read_data2);
+    task check_result;
+        input condition;
+        input [8*35-1:0] test_name;
+        begin
+            if (condition === 1'b1) begin
+                $display("PASS: %0s", test_name);
+                passed = passed + 1;
+            end
+            else begin
+                $display("FAIL: %0s", test_name);
+                failed = failed + 1;
+            end
+        end
+    endtask
 
-        // Initial values
+    initial begin
         reg_write = 0;
         rs1 = 0;
         rs2 = 0;
         rd = 0;
         write_data = 0;
 
-        // Write 100 to x5
-        #10;
+        // Write 100 to x5.
+        @(negedge clk);
         reg_write = 1;
         rd = 5;
         write_data = 100;
 
-        #10;
+        @(negedge clk);
         reg_write = 0;
         rs1 = 5;
+        #1;
+        check_result(read_data1 === 32'd100,
+                     "Read back 100 from x5");
 
-        #5;
-        if (read_data1 == 100)
-            $display("PASS: x5 = 100");
-        else
-            $display("FAIL: x5 expected 100");
-
-        // Write 200 to x10
-        #5;
+        // Write 200 to x10.
+        @(negedge clk);
         reg_write = 1;
         rd = 10;
         write_data = 200;
 
-        #10;
+        @(negedge clk);
         reg_write = 0;
         rs1 = 10;
+        #1;
+        check_result(read_data1 === 32'd200,
+                     "Read back 200 from x10");
 
-        #5;
-        if (read_data1 == 200)
-            $display("PASS: x10 = 200");
-        else
-            $display("FAIL: x10 expected 200");
+        // Verify two registers retain separate values.
+        rs1 = 5;
+        rs2 = 10;
+        #1;
+        check_result(read_data1 === 32'd100 &&
+                     read_data2 === 32'd200,
+                     "Read x5 and x10 independently");
 
-        // Check x0
+        // Attempt to write 999 to x0.
+        @(negedge clk);
+        reg_write = 1;
+        rd = 0;
+        write_data = 999;
+
+        @(negedge clk);
+        reg_write = 0;
         rs1 = 0;
         rs2 = 0;
+        #1;
+        check_result(read_data1 === 32'd0 &&
+                     read_data2 === 32'd0,
+                     "x0 remains zero after write attempt");
 
-        #5;
-        if (read_data1 == 0 && read_data2 == 0)
-            $display("PASS: x0 always reads 0");
+        $display("");
+        $display("==============================");
+        $display("Register File Test Results");
+        $display("Passed: %0d", passed);
+        $display("Failed: %0d", failed);
+        $display("==============================");
+
+        if (failed == 0)
+            $display("ALL REGISTER FILE TESTS PASSED");
         else
-            $display("FAIL: x0 is not zero");
+            $display("SOME REGISTER FILE TESTS FAILED");
 
         $finish;
     end
